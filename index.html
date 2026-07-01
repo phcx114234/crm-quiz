@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM 题库刷题</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+/* Header */
+.header { text-align: center; padding: 30px 0 20px; }
+.header h1 { font-size: 28px; color: #1a1a2e; }
+.header p { color: #666; font-size: 14px; margin-top: 4px; }
+
+/* Filters */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; justify-content: center; }
+.filters button { padding: 8px 18px; border: 1.5px solid #d0d5dd; border-radius: 20px; background: #fff; cursor: pointer; font-size: 14px; color: #555; transition: all .15s; }
+.filters button:hover { border-color: #4f46e5; color: #4f46e5; }
+.filters button.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+/* Stats bar */
+.stats { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; font-size: 14px; color: #666; }
+.stats span { background: #fff; padding: 6px 14px; border-radius: 12px; border: 1px solid #e5e7eb; }
+.stats .correct { color: #059669; }
+.stats .wrong { color: #dc2626; }
+
+/* Card */
+.card { background: #fff; border-radius: 16px; padding: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); margin-bottom: 16px; }
+.q-meta { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
+.q-type { font-size: 12px; padding: 3px 10px; border-radius: 10px; font-weight: 500; }
+.q-type.choice { background: #ede9fe; color: #6d28d9; }
+.q-type.fill { background: #dbeafe; color: #2563eb; }
+.q-type.tf { background: #fef3c7; color: #d97706; }
+.q-type.essay { background: #d1fae5; color: #059669; }
+.q-number { font-size: 12px; color: #999; }
+.q-stem { font-size: 17px; line-height: 1.7; margin-bottom: 20px; }
+
+/* Options */
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option { padding: 12px 16px; border: 1.5px solid #e5e7eb; border-radius: 10px; cursor: pointer; font-size: 15px; transition: all .15s; display: flex; align-items: flex-start; gap: 10px; }
+.option:hover { border-color: #4f46e5; background: #f8f7ff; }
+.option.selected { border-color: #4f46e5; background: #eef2ff; }
+.option.correct { border-color: #059669; background: #ecfdf5; }
+.option.wrong { border-color: #dc2626; background: #fef2f2; }
+.option .letter { font-weight: 600; color: #4f46e5; min-width: 24px; }
+.option input[type="radio"] { display: none; }
+
+/* T/F buttons */
+.tf-btns { display: flex; gap: 12px; }
+.tf-btns button { flex: 1; padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; cursor: pointer; font-size: 16px; background: #fff; transition: all .15s; }
+.tf-btns button:hover { border-color: #4f46e5; }
+.tf-btns button.selected { border-color: #4f46e5; background: #eef2ff; }
+.tf-btns button.correct { border-color: #059669; background: #ecfdf5; }
+.tf-btns button.wrong { border-color: #dc2626; background: #fef2f2; }
+
+/* Fill input */
+.fill-input { width: 100%; padding: 10px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 15px; outline: none; transition: border-color .15s; }
+.fill-input:focus { border-color: #4f46e5; }
+.fill-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.fill-group input { flex: 1; min-width: 120px; }
+
+/* Essay textarea */
+.essay-input { width: 100%; min-height: 120px; padding: 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 15px; resize: vertical; outline: none; }
+.essay-input:focus { border-color: #4f46e5; }
+
+/* Result */
+.result { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-size: 14px; display: none; }
+.result.show { display: block; }
+.result.correct { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.result.wrong { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* Buttons row */
+.actions { display: flex; gap: 10px; margin-top: 20px; justify-content: center; flex-wrap: wrap; }
+.btn { padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all .15s; }
+.btn-primary { background: #4f46e5; color: #fff; }
+.btn-primary:hover { background: #4338ca; }
+.btn-outline { background: #fff; color: #4f46e5; border: 1.5px solid #4f46e5; }
+.btn-outline:hover { background: #f8f7ff; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Progress */
+.progress { height: 4px; background: #e5e7eb; border-radius: 2px; margin: 0 auto 20px; max-width: 800px; }
+.progress-bar { height: 100%; background: #4f46e5; border-radius: 2px; transition: width .3s; }
+
+/* Review table at end */
+.review { margin-top: 30px; }
+.review h2 { font-size: 22px; margin-bottom: 16px; text-align: center; }
+.review-item { background: #fff; border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); border-left: 4px solid #e5e7eb; }
+.review-item.r-correct { border-left-color: #059669; }
+.review-item.r-wrong { border-left-color: #dc2626; }
+.review-item.r-skip { border-left-color: #f59e0b; }
+.review-q { font-size: 15px; margin-bottom: 6px; }
+.review-answer { font-size: 13px; color: #059669; }
+.review-your { font-size: 13px; color: #dc2626; }
+.empty-state { text-align: center; padding: 80px 20px; color: #999; }
+.empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+
+/* Accuracy bar */
+.accuracy { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; font-size: 13px; color: #888; flex-wrap: wrap; }
+.acc-item { display: flex; align-items: center; gap: 4px; }
+.acc-item.divider { color: #ddd; }
+.acc-val { font-weight: 600; font-size: 14px; }
+.acc-val.acc-good { color: #059669; }
+.acc-val.acc-ok { color: #d97706; }
+.acc-val.acc-bad { color: #dc2626; }
+
+/* Mode indicator */
+.mode-indicator { text-align: center; padding: 6px 16px; margin-bottom: 16px; font-size: 13px; font-weight: 500; border-radius: 20px; max-width: 280px; margin-left: auto; margin-right: auto; transition: all .2s; }
+.mode-indicator.quiz { background: #eef2ff; color: #4f46e5; }
+.mode-indicator.study { background: #fef3c7; color: #b45309; }
+
+/* Study mode */
+.q-study-badge { font-size: 12px; padding: 2px 8px; border-radius: 8px; background: #fef3c7; color: #b45309; font-weight: 500; }
+.ans-tag { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #d1fae5; color: #059669; margin-left: auto; font-weight: 500; }
+.fill-answer { background: #ecfdf5 !important; border-color: #a7f3d0 !important; color: #059669; font-weight: 500; }
+
+/* Jump nav */
+.nav-jump { display: inline-flex; align-items: center; gap: 4px; }
+.nav-jump input { width: 68px; padding: 6px 10px; border: 1.5px solid #d0d5dd; border-radius: 14px; font-size: 14px; text-align: center; outline: none; transition: border-color .2s; }
+.nav-jump input:focus { border-color: #4f46e5; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>✈️ CRM 题库</h1>
+    <p>驾驶舱资源管理 · 通飞学支</p>
+  </div>
+
+  <div class="mode-indicator" id="mode-indicator">当前：📝 刷题模式 · 顺序</div>
+
+  <div class="filters" id="filters">
+    <button data-filter="all" class="active">全部</button>
+    <button data-filter="choice">选择题</button>
+    <button data-filter="fill">填空题</button>
+    <button data-filter="tf">判断题</button>
+    <button data-filter="essay">名词解释</button>
+    <button id="btn-study" style="border-style:dashed;">📖 背题</button>
+    <button id="btn-random" style="border-style:dashed;">🔀 乱序</button>
+    <button id="btn-reset" style="border-style:dashed;">🔄 重置</button>
+    <span class="nav-jump">
+      <input type="number" id="jump-input" placeholder="题号" min="1" title="输入题号跳转">
+      <button id="btn-jump" class="btn btn-outline" style="padding:4px 10px;font-size:13px;">跳转</button>
+    </span>
+  </div>
+
+  <div class="progress"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+
+  <div class="stats" id="stats">
+    <span>📝 <span id="stat-total">0</span> 题</span>
+    <span class="correct">✅ <span id="stat-correct">0</span></span>
+    <span class="wrong">❌ <span id="stat-wrong">0</span></span>
+    <span>⏭️ <span id="stat-skip">0</span></span>
+  </div>
+  <div class="accuracy">
+    <span class="acc-item">总正确率 <span id="acc-all" class="acc-val">-</span></span>
+    <span class="acc-item divider">|</span>
+    <span class="acc-item">选择 <span id="acc-choice" class="acc-val">-</span></span>
+    <span class="acc-item">填空 <span id="acc-fill" class="acc-val">-</span></span>
+    <span class="acc-item">判断 <span id="acc-tf" class="acc-val">-</span></span>
+    <span class="acc-item">简答 <span id="acc-essay" class="acc-val">-</span></span>
+  </div>
+
+  <div id="quiz-area"></div>
+
+  <div id="review-area" style="display:none;"></div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    "id": 0,
+    "type": "choice",
+    "label": "单选题",
+    "number": 1,
+    "stem": "能降低飞行员工作负荷的自动化系统属于下列哪一类机载设\n备资源:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "通讯设备"
+      },
+      {
+        "letter": "B",
+        "text": "状态显示器"
+      },
+      {
+        "letter": "C",
+        "text": "趋势预测指示器"
+      },
+      {
+        "letter": "D",
+        "text": "劳动保护装置"
+      }
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 1,
+    "type": "choice",
+    "label": "单选题",
+    "number": 2,
+    "stem": "以下描述错误的是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "即便是处于正常的工作负荷状态，所有机组成员也应该保持警惕以避免进入"
+      },
+      {
+        "letter": "B",
+        "text": "识别自己处于较低工作负荷状态比识别其他机组成员要容易一些"
+      },
+      {
+        "letter": "C",
+        "text": "过分依赖座舱的自动化设备有时增加机组的工作负荷"
+      },
+      {
+        "letter": "D",
+        "text": "自动化设备会增加飞行员的心理负荷"
+      }
+    ],
+    "answer": "B"
+  },
+  {
+    "id": 2,
+    "type": "choice",
+    "label": "单选题",
+    "number": 3,
+    "stem": "ATC:金星216，改变频率到离场120.5; 机组:银翼142，离场\n120.9 ATC:祝你们旅途愉快这一交流发生错误的原因是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "ATC 发出的信息有错"
+      },
+      {
+        "letter": "B",
+        "text": "机场交通繁忙"
+      },
+      {
+        "letter": "C",
+        "text": "ATC 没有交流问题"
+      },
+      {
+        "letter": "D",
+        "text": "这一交流不是闭环式的交流"
+      }
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 3,
+    "type": "choice",
+    "label": "单选题",
+    "number": 4,
+    "stem": "驾驶舱资源管理常用的三个工具是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "标准操作程序、检查单"
+      },
+      {
+        "letter": "B",
+        "text": "机载设备、检查单以及应急程序"
+      },
+      {
+        "letter": "C",
+        "text": "营运手册、航图以及通讯设备"
+      },
+      {
+        "letter": "D",
+        "text": "驾驶舱交流、质询与反应以及短期策略"
+      }
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 4,
+    "type": "choice",
+    "label": "单选题",
+    "number": 5,
+    "stem": "以下哪些不是提高驾驶舱处境意识的途径:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "通过触觉、听觉和视觉提醒器来提高人的意识"
+      },
+      {
+        "letter": "B",
+        "text": "寻找用团队工作精神解决问题的方案，创造一种“团队处境意识”"
+      },
+      {
+        "letter": "C",
+        "text": "与机组其他成员搞好个人关系"
+      },
+      {
+        "letter": "D",
+        "text": "通过各种生理和心理研究工作探索如何消除失去SA 的根源"
+      }
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 5,
+    "type": "choice",
+    "label": "单选题",
+    "number": 6,
+    "stem": "“当冲突产生时，我可能用其他话题来岔开，或者根本就不\n予理睬，以便使冲突终止，或者奋力力争以赢得自己的地位”。这句话所反映出\n的驾驶舱管理方式类型是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "1，1 型"
+      },
+      {
+        "letter": "B",
+        "text": "5，5 型"
+      },
+      {
+        "letter": "C",
+        "text": "9，1 型"
+      },
+      {
+        "letter": "D",
+        "text": "1，9 型"
+      }
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 6,
+    "type": "choice",
+    "label": "单选题",
+    "number": 7,
+    "stem": "下列不属于较高工作负荷下的表现的是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "动作量增大"
+      },
+      {
+        "letter": "B",
+        "text": "易于发怒"
+      },
+      {
+        "letter": "C",
+        "text": "动作量减少"
+      },
+      {
+        "letter": "D",
+        "text": "注意力固着在某些紧急任务上"
+      }
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 7,
+    "type": "choice",
+    "label": "单选题",
+    "number": 8,
+    "stem": "讲评也是一种反馈，下列关于这种反馈说法正确的是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "行动前使用讲评可以使讲评的功用发挥到最大"
+      },
+      {
+        "letter": "B",
+        "text": "反馈效果与给予反馈的原因无关"
+      },
+      {
+        "letter": "C",
+        "text": "反馈采用评价性的方式比描述性的方式好"
+      },
+      {
+        "letter": "D",
+        "text": "一般性的反馈信息比特殊和具体的反馈信息好"
+      }
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 8,
+    "type": "choice",
+    "label": "单选题",
+    "number": 9,
+    "stem": "某飞行学员不顾塔台管制员连续三次警告，继续他的不放起\n落架着陆。”这一情景属于:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "非营运性注意力分散"
+      },
+      {
+        "letter": "B",
+        "text": "营运性的注意力分散"
+      },
+      {
+        "letter": "C",
+        "text": "生理性注意力分散"
+      },
+      {
+        "letter": "D",
+        "text": "注意力分配不当"
+      }
+    ],
+    "answer": "B"
+  },
+  {
+    "id": 9,
+    "type": "choice",
+    "label": "单选题",
+    "number": 10,
+    "stem": "在一次飞行中，一个飞行员在执行着陆检查单时说:“收起\n落架，锁定。”其中一个机组成员听成:“放起落架，锁定。”造成这一错误最有\n可能的原因是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "期望的影响"
+      },
+      {
+        "letter": "B",
+        "text": "不恰当的言语表达"
+      },
+      {
+        "letter": "C",
+        "text": "噪音太大"
+      },
+      {
+        "letter": "D",
+        "text": "个性冲突"
+      }
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 10,
+    "type": "choice",
+    "label": "单选题",
+    "number": 11,
+    "stem": "驾驶舱资源管理训练的根本目的是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "改善个性品质"
+      },
+      {
+        "letter": "B",
+        "text": "完全杜绝人的错误"
+      },
+      {
+        "letter": "C",
+        "text": "获得基本驾驶术"
+      },
+      {
+        "letter": "D",
+        "text": "减少人的差错"
+      }
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 11,
+    "type": "choice",
+    "label": "单选题",
+    "number": 12,
+    "stem": "机长靠在自己的座位上做起了白日梦。副驾驶看起来也很疲\n倦和所事事。对这一情景应该采取的措施是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "由自动驾驶帮助完成一部分任务"
+      },
+      {
+        "letter": "B",
+        "text": "增加可用时间"
+      },
+      {
+        "letter": "C",
+        "text": "减少任务价值"
+      },
+      {
+        "letter": "D",
+        "text": "增加任务数"
+      }
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 12,
+    "type": "choice",
+    "label": "单选题",
+    "number": 13,
+    "stem": "机长:“今天真漫长，总算能安全地会到家里了” 副驾驶:\n“我也有同感。” 这一个交流的类型是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "管理性交流"
+      },
+      {
+        "letter": "B",
+        "text": "这是一个PA 交流"
+      },
+      {
+        "letter": "C",
+        "text": "无关交流"
+      },
+      {
+        "letter": "D",
+        "text": "SOP 标准程序交流"
+      }
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 13,
+    "type": "choice",
+    "label": "单选题",
+    "number": 14,
+    "stem": "当所处的情景已经威胁着飞行安全或者超出了最低限制，副\n驾驶较为年轻缺乏飞行经验，作为机长你提出的质询未能获得正确反应。这时你\n应该:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "接替对飞机的操纵"
+      },
+      {
+        "letter": "B",
+        "text": "进行进一步的质询"
+      },
+      {
+        "letter": "C",
+        "text": "听任事态的发展"
+      },
+      {
+        "letter": "D",
+        "text": "等待发现问题"
+      }
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 14,
+    "type": "choice",
+    "label": "单选题",
+    "number": 15,
+    "stem": "在某一飞行任务中的某段时间内，驾驶舱内的驾驶员发生临\n时性的迷航，弄错了当时飞机的位置。这一现象是驾驶舱处境意识不良的哪种情\n况:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "遗忘"
+      },
+      {
+        "letter": "B",
+        "text": "意识混乱"
+      },
+      {
+        "letter": "C",
+        "text": "无团结性"
+      },
+      {
+        "letter": "D",
+        "text": "无警惕性"
+      }
+    ],
+    "answer": "B"
+  },
+  {
+    "id": 15,
+    "type": "choice",
+    "label": "单选题",
+    "number": 16,
+    "stem": "驾驶舱中最复杂、可变性最大，最有利用价值的资源是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "人力资源"
+      },
+      {
+        "letter": "B",
+        "text": "营运信息资源"
+      },
+      {
+        "letter": "C",
+        "text": "设备资源"
+      },
+      {
+        "letter": "D",
+        "text": "软件资源"
+      }
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 16,
+    "type": "choice",
+    "label": "单选题",
+    "number": 17,
+    "stem": "“当冲突产生时，我可能用其他话题来岔开，或者根本就不\n予理睬，以便使冲突终止，或者奋力力争以赢得自己的地位”。这句话所反映出\n的驾驶舱管理方式类型是:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "1，1 型"
+      },
+      {
+        "letter": "B",
+        "text": "5，5 型"
+      },
+      {
+        "letter": "C",
+        "text": "9，1 型"
+      },
+      {
+        "letter": "D",
+        "text": "1，9 型"
+      }
+    ],
+    "answer": "C"
+  },
+  {
+    "id": 17,
+    "type": "choice",
+    "label": "单选题",
+    "number": 18,
+    "stem": "“在一次飞行事件中，空中机械师在与公司通话，机长正用\n客舱PA 系统对乘客讲话。此时副驾驶在下降期间误解了空中交通管制员的许可，\n机长与空中机械师都未能发现副驾驶的错误”。这一情景中，空中机械师与机长\n发生了:",
+    "options": [
+      {
+        "letter": "A",
+        "text": "注意力分配不当"
+      },
+      {
+        "letter": "B",
+        "text": "营运性注意力分散"
+      },
+      {
+        "letter": "C",
+        "text": "生理性注意力分散"
+      },
+      {
+        "letter": "D",
+        "text": "非营运性注意力分散"
+      }
+    ],
+    "answer": "D"
+  },
+  {
+    "id": 18,
+    "type": "choice",
+    "label": "单选题",
+    "number": 19,
+    "stem": "某飞行员因遭受过机长的严厉批评，以后不敢再与机长交流\n的现象属于",
+    "options": [
+      {
+        "letter": "A",
+        "text": "交流的内部障碍"
+      },
+      {
+        "letter": "B",
+        "text": "压抑"
+      },
+      {
+        "letter": "C",
+        "text": "交流的外部障碍"
+      },
+      {
+        "letter": "D",
+        "text": "内疚心理"
+      }
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 19,
+    "type": "choice",
+    "label": "单选题",
+    "number": 20,
+    "stem": "根据以下哪些线索可以识别机组或某个飞行员的处境意识已\n经下降了",
+    "options": [
+      {
+        "letter": "A",
+        "text": "与既定的目标不吻合、模棱两可的信息、不适宜的程序、无人操纵飞机、冲"
+      },
+      {
+        "letter": "B",
+        "text": "注意力分散、无人监视驾驶舱外、疾病、紧张、酒精作用以及交流不当"
+      },
+      {
+        "letter": "C",
+        "text": "冲动性行为、无人操纵飞机、唤醒水平过低、紧张以及身体疾病"
+      }
+    ],
+    "answer": "A"
+  },
+  {
+    "id": 20,
+    "type": "fill",
+    "label": "填空题",
+    "number": 1,
+    "stem": "驾驶舱中最重要的三种易耗品资源是____、____、____。",
+    "answers": [
+      "燃油",
+      "个人精力",
+      "时间"
+    ],
+    "answer": "燃油、个人精力、时间"
+  },
+  {
+    "id": 21,
+    "type": "fill",
+    "label": "填空题",
+    "number": 2,
+    "stem": "为了能使副驾驶理直气壮地及时规劝机长纠正错误，国外不少航空公司将____\n列为CRM 训练的重要组成部分。劝告应该坚持自己的观点，直至____才结束。",
+    "answers": [
+      "“PACE”进谏法",
+      "被对方完全接受"
+    ],
+    "answer": "“PACE”进谏法、被对方完全接受"
+  },
+  {
+    "id": 22,
+    "type": "fill",
+    "label": "填空题",
+    "number": 3,
+    "stem": "工作负荷的平衡包括所有的____和所有的____之间的平衡。",
+    "answers": [
+      "飞行时间",
+      "机组成员"
+    ],
+    "answer": "飞行时间、机组成员"
+  },
+  {
+    "id": 23,
+    "type": "fill",
+    "label": "填空题",
+    "number": 4,
+    "stem": "机组群体处境意识主要取决于____处境意识。",
+    "answers": [
+      "机长"
+    ],
+    "answer": "机长"
+  },
+  {
+    "id": 24,
+    "type": "fill",
+    "label": "填空题",
+    "number": 5,
+    "stem": "解决座舱冲突的一个最根本的前提是:将注意力集中在____的，而不应该追求\n\n____。",
+    "answers": [
+      "什么是正确",
+      "谁是正确"
+    ],
+    "answer": "什么是正确、谁是正确"
+  },
+  {
+    "id": 25,
+    "type": "fill",
+    "label": "填空题",
+    "number": 6,
+    "stem": "短期策略制定的五个步骤是____、____、____、____、\n____。",
+    "answers": [
+      "识别问题",
+      "建立计划",
+      "校正计划",
+      "总结性简述",
+      "监视"
+    ],
+    "answer": "识别问题、建立计划、校正计划、总结性简述、监视"
+  },
+  {
+    "id": 26,
+    "type": "fill",
+    "label": "填空题",
+    "number": 7,
+    "stem": "驾驶舱工作负荷的大小与____和____成正比，与____成反比。",
+    "answers": [
+      "任务数",
+      "任务价值",
+      "可用时间"
+    ],
+    "answer": "任务数、任务价值、可用时间"
+  },
+  {
+    "id": 27,
+    "type": "fill",
+    "label": "填空题",
+    "number": 8,
+    "stem": "非正常情况下特别需要加强____驾驶舱交流。",
+    "answers": [
+      "管理性"
+    ],
+    "answer": "管理性"
+  },
+  {
+    "id": 28,
+    "type": "fill",
+    "label": "填空题",
+    "number": 9,
+    "stem": "驾驶舱交流的特殊技能包括____、____、____、____、____。",
+    "answers": [
+      "质询与反应",
+      "劝告",
+      "简述与简评",
+      "冲突的解决",
+      "决策"
+    ],
+    "answer": "质询与反应、劝告、简述与简评、冲突的解决、决策"
+  },
+  {
+    "id": 29,
+    "type": "fill",
+    "label": "填空题",
+    "number": 10,
+    "stem": "劝告应该坚持自己的观点，直至____才结束。",
+    "answers": [
+      "被对方完全接受"
+    ],
+    "answer": "被对方完全接受"
+  },
+  {
+    "id": 30,
+    "type": "tf",
+    "label": "判断题",
+    "number": 1,
+    "stem": "CRM 是针对个别机组成员进行训练的一种形式。",
+    "answer": "错"
+  },
+  {
+    "id": 31,
+    "type": "tf",
+    "label": "判断题",
+    "number": 2,
+    "stem": "飞行员在利用其他辅助资源之前要集中自己的注意力和使用\n自己的各种技能。",
+    "answer": "对"
+  },
+  {
+    "id": 32,
+    "type": "tf",
+    "label": "判断题",
+    "number": 3,
+    "stem": "机组群体的处境意识取决于各个机组成员的处境意识相加之\n和。",
+    "answer": "错"
+  },
+  {
+    "id": 33,
+    "type": "tf",
+    "label": "判断题",
+    "number": 4,
+    "stem": "交流是一个过程，包括发送、接收、输出结果三个部分。",
+    "answer": "错"
+  },
+  {
+    "id": 34,
+    "type": "tf",
+    "label": "判断题",
+    "number": 5,
+    "stem": "非正常情况下特别需要加强管理性的驾驶舱交流。",
+    "answer": "对"
+  },
+  {
+    "id": 35,
+    "type": "tf",
+    "label": "判断题",
+    "number": 6,
+    "stem": "期望听到想听到的消息属于交流中的内部障碍。",
+    "answer": "对"
+  },
+  {
+    "id": 36,
+    "type": "tf",
+    "label": "判断题",
+    "number": 7,
+    "stem": "飞行员状态的变化都是一个渐变的过程。",
+    "answer": "错"
+  },
+  {
+    "id": 37,
+    "type": "tf",
+    "label": "判断题",
+    "number": 8,
+    "stem": "所有的飞行员都应该接受驾驶舱资源管理的训练。",
+    "answer": "对"
+  },
+  {
+    "id": 38,
+    "type": "tf",
+    "label": "判断题",
+    "number": 9,
+    "stem": "驾驶舱资源管理是一门边缘性学科。",
+    "answer": "对"
+  },
+  {
+    "id": 39,
+    "type": "tf",
+    "label": "判断题",
+    "number": 10,
+    "stem": "公司无线电通话引起的注意力分散属于营运性注意力分散。",
+    "answer": "错"
+  },
+  {
+    "id": 40,
+    "type": "tf",
+    "label": "判断题",
+    "number": 11,
+    "stem": "在与ATC 的交流中，飞行员重复ATC 的内容过程叫做hearback。",
+    "answer": "错"
+  },
+  {
+    "id": 41,
+    "type": "tf",
+    "label": "判断题",
+    "number": 12,
+    "stem": "驾驶舱内冲突都会产生破坏作用。",
+    "answer": "错"
+  },
+  {
+    "id": 42,
+    "type": "tf",
+    "label": "判断题",
+    "number": 13,
+    "stem": "驾驶舱资源只存在于驾驶舱内，而不存在于驾驶舱外。",
+    "answer": "错"
+  },
+  {
+    "id": 43,
+    "type": "tf",
+    "label": "判断题",
+    "number": 14,
+    "stem": "质询要在对疑问获得肯定的信息后才能停止。",
+    "answer": "对"
+  },
+  {
+    "id": 44,
+    "type": "tf",
+    "label": "判断题",
+    "number": 15,
+    "stem": "工作负荷越低，飞行员就有越多的精力应付其他突发事件，\n所以控制工作负荷的最佳途径是降低工作负荷。",
+    "answer": "错"
+  },
+  {
+    "id": 45,
+    "type": "tf",
+    "label": "判断题",
+    "number": 16,
+    "stem": "机组群体的处境意识取决于各个机组成员的处境意识相加之和。",
+    "answer": "错"
+  },
+  {
+    "id": 46,
+    "type": "tf",
+    "label": "判断题",
+    "number": 17,
+    "stem": "交流是一个过程，包括发送、接收、输出结果三个部分。",
+    "answer": "错"
+  },
+  {
+    "id": 47,
+    "type": "tf",
+    "label": "判断题",
+    "number": 18,
+    "stem": "非正常情况下特别需要加强管理性的驾驶舱交流。",
+    "answer": "对"
+  },
+  {
+    "id": 48,
+    "type": "tf",
+    "label": "判断题",
+    "number": 19,
+    "stem": "CRM 是针对个别机组成员进行训练的一种形式。",
+    "answer": "错"
+  },
+  {
+    "id": 49,
+    "type": "tf",
+    "label": "判断题",
+    "number": 20,
+    "stem": "飞行员在利用其他辅助资源之前要集中自己的注意力和使用自己的各种技能。",
+    "answer": "对"
+  },
+  {
+    "id": 50,
+    "type": "essay",
+    "label": "名词解释2",
+    "number": 1,
+    "stem": "处境意识",
+    "answer": "处境意识是飞行机组在特定的时段里和特定的情境中对影响飞机和机组的各种因素、各种条件的准确知觉。"
+  },
+  {
+    "id": 51,
+    "type": "essay",
+    "label": "名词解释2",
+    "number": 2,
+    "stem": "CFIT 事故",
+    "answer": "Controlled Flight Into Terrain，可控飞行撞地事故，指机械功能正常的飞机无意中碰撞地面、水面或障碍物而发生的事故。"
+  },
+  {
+    "id": 52,
+    "type": "essay",
+    "label": "名词解释2",
+    "number": 3,
+    "stem": "机组资源管理",
+    "answer": "有效的利用所有可以利用的资源(包括硬件、软件、环境以及人力资源)，以便达到安全、高效以及舒适飞行目的的过程。"
+  },
+  {
+    "id": 53,
+    "type": "essay",
+    "label": "名词解释2",
+    "number": 4,
+    "stem": "劝告",
+    "answer": "劝告是指飞行员需要以预见的形式陈述他所知道的或者认为的事实。"
+  },
+  {
+    "id": 54,
+    "type": "essay",
+    "label": "名词解释2",
+    "number": 5,
+    "stem": "短期策略",
+    "answer": "短期性策略是飞行员或者飞行机组针对某一次飞行或者某一特殊的处境而制订的计划。"
+  }
+];
+
+let filter = 'all';
+let studyMode = false;
+let randomMode = false;
+let currentIndex = 0;
+let filteredQuestions = [];
+let answers = {};     // qid -> user answer
+let submitted = {};   // qid -> true if submitted
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function shuffle(a) {
+  const arr = [...a];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function applyFilter() {
+  let qs = QUESTIONS;
+  if (filter !== 'all') qs = qs.filter(q => q.type === filter);
+  filteredQuestions = randomMode ? shuffle(qs) : [...qs];
+  currentIndex = 0;
+  render();
+}
+
+function countStats(qs) {
+  let correct = 0, wrong = 0, skip = 0, total = qs.length;
+  for (const q of qs) {
+    if (!(q.id in submitted)) { skip++; continue; }
+    const user = answers[q.id];
+    const ok = isAnswerCorrect(q, user);
+    if (ok === true) correct++;
+    else if (ok === false) wrong++;
+    // essay (null): treat as skip for self-graded
+  }
+  const done = correct + wrong;
+  const rate = done > 0 ? Math.round(correct / done * 100) : 0;
+  return { total, correct, wrong, skip, done, rate };
+}
+
+function updateStats() {
+  // Filtered stats for progress bar
+  const fs = countStats(filteredQuestions);
+  document.getElementById('stat-total').textContent = fs.total;
+  document.getElementById('stat-correct').textContent = fs.correct;
+  document.getElementById('stat-wrong').textContent = fs.wrong;
+  document.getElementById('stat-skip').textContent = fs.skip;
+  document.getElementById('progress-bar').style.width = fs.total ? Math.round((fs.done + fs.skip) / fs.total * 100) + '%' : '0%';
+
+  // Per-type accuracy
+  const types = ['choice', 'fill', 'tf', 'essay'];
+  const labels = { choice: '选择', fill: '填空', tf: '判断', essay: '简答' };
+  for (const t of types) {
+    const ts = countStats(QUESTIONS.filter(q => q.type === t));
+    const el = document.getElementById('acc-' + t);
+    if (el) {
+      el.textContent = ts.done > 0 ? ts.rate + '%' : '-';
+      el.className = 'acc-val ' + (ts.done > 0 ? (ts.rate >= 80 ? 'acc-good' : ts.rate >= 60 ? 'acc-ok' : 'acc-bad') : '');
+    }
+  }
+  // Overall
+  const all = countStats(QUESTIONS);
+  const elAll = document.getElementById('acc-all');
+  if (elAll) {
+    elAll.textContent = all.done > 0 ? all.rate + '%' : '-';
+    elAll.className = 'acc-val ' + (all.done > 0 ? (all.rate >= 80 ? 'acc-good' : all.rate >= 60 ? 'acc-ok' : 'acc-bad') : '');
+  }
+}
+
+function isAnswerCorrect(q, user) {
+  if (q.type === 'choice') return user === q.answer;
+  if (q.type === 'tf') return user === q.answer;
+  if (q.type === 'fill') {
+    if (!user || !q.answers) return false;
+    // User answer is array of strings
+    return q.answers.every((a, i) => (user[i] || '').trim() === a.trim());
+  }
+  // essay: always show answer, user self-grades
+  return null;
+}
+
+function renderQuestion(q) {
+  const isDone = q.id in submitted;
+  const userAns = answers[q.id];
+  const typeLabels = { choice: '选择题', fill: '填空题', tf: '判断题', essay: '名词解释' };
+  const showAnswer = studyMode || isDone;
+
+  let html = `<div class="card">
+    <div class="q-meta">
+      <span class="q-type ${q.type}">${typeLabels[q.type]}</span>
+      <span class="q-number">第 ${randomMode ? (currentIndex + 1) : q.number} 题</span>
+      ${studyMode ? '<span class="q-study-badge">📖 背题</span>' : ''}
+    </div>
+    <div class="q-stem">${q.stem}</div>`;
+
+  if (q.type === 'choice') {
+    html += '<div class="options">';
+    for (const opt of q.options) {
+      let cls = 'option';
+      if (showAnswer && opt.letter === q.answer) cls += ' correct';
+      if (isDone && userAns === opt.letter && opt.letter !== q.answer) cls += ' wrong';
+      if (!isDone && !studyMode && userAns === opt.letter) cls += ' selected';
+      html += `<div class="${cls}" data-value="${opt.letter}">
+        <span class="letter">${opt.letter}.</span><span>${opt.text}</span>
+        ${showAnswer && opt.letter === q.answer ? '<span class="ans-tag">✓ 答案</span>' : ''}
+      </div>`;
+    }
+    html += '</div>';
+    if (showAnswer) {
+      html += `<div class="result show correct">
+        ✅ 正确答案：<strong>${q.answer}</strong>
+      </div>`;
+    } else if (isDone) {
+      const ok = userAns === q.answer;
+      html += `<div class="result show ${ok ? 'correct' : 'wrong'}">
+        ${ok ? '✅ 正确！' : '❌ 错误，正确答案是 ' + q.answer}
+      </div>`;
+    }
+
+  } else if (q.type === 'tf') {
+    html += '<div class="tf-btns">';
+    for (const val of ['对', '错']) {
+      let cls = '';
+      if (showAnswer && val === q.answer) cls = ' correct';
+      if (isDone && userAns === val && val !== q.answer) cls = ' wrong';
+      if (!isDone && !studyMode && userAns === val) cls = ' selected';
+      html += `<button class="${cls}" data-value="${val}">${val === '对' ? '✓' : '✗'} ${val}${showAnswer && val === q.answer ? ' · 答案' : ''}</button>`;
+    }
+    html += '</div>';
+    if (showAnswer) {
+      html += `<div class="result show correct">
+        ✅ 正确答案：<strong>${q.answer}</strong>
+      </div>`;
+    } else if (isDone) {
+      const ok = userAns === q.answer;
+      html += `<div class="result show ${ok ? 'correct' : 'wrong'}">
+        ${ok ? '✅ 正确！' : '❌ 错误，正确答案是 ' + q.answer}
+      </div>`;
+    }
+
+  } else if (q.type === 'fill') {
+    const blanks = (q.stem.match(/____/g) || []).length;
+    html += '<div class="fill-group">';
+    for (let i = 0; i < blanks; i++) {
+      const showAns = showAnswer && q.answers[i];
+      const val = showAns ? q.answers[i] : ((isDone && userAns) ? userAns[i] || '' : (userAns ? userAns[i] || '' : ''));
+      const disabled = showAnswer ? 'disabled' : (isDone ? 'disabled' : '');
+      const cls = showAnswer ? 'fill-input fill-answer' : 'fill-input';
+      html += `<input class="${cls}" placeholder="空 ${i+1}" data-idx="${i}" value="${escHtml(val)}" ${disabled}>`;
+    }
+    html += '</div>';
+    if (showAnswer) {
+      html += `<div class="result show correct">
+        ✅ 答案：<strong>${q.answers.join('、')}</strong>
+      </div>`;
+    } else if (isDone) {
+      const correctAnswers = q.answers.join('、');
+      const ok = isAnswerCorrect(q, userAns);
+      html += `<div class="result show ${ok ? 'correct' : 'wrong'}">
+        ${ok ? '✅ 正确！' : '❌ 正确答案：' + correctAnswers}
+      </div>`;
+    }
+
+  } else if (q.type === 'essay') {
+    html += `<textarea class="essay-input" placeholder="输入你的答案..." ${showAnswer ? 'disabled' : (isDone ? 'disabled' : '')}>${escHtml(showAnswer ? q.answer : (userAns || ''))}</textarea>`;
+    if (showAnswer) {
+      html += `<div class="result show correct">
+        📖 参考答案：<br>${q.answer.replace(/\n/g, '<br>')}
+      </div>`;
+    } else if (isDone) {
+      html += `<div class="result show correct">
+        📖 参考答案：<br>${q.answer.replace(/\n/g, '<br>')}
+      </div>`;
+    }
+  }
+
+  html += '</div>'; // close card
+
+  // Navigation
+  html += '<div class="actions">';
+  if (currentIndex > 0) {
+    html += '<button class="btn btn-outline" id="btn-prev">← 上一题</button>';
+  }
+  if (!studyMode && !isDone) {
+    html += '<button class="btn btn-primary" id="btn-submit">✓ 提交</button>';
+    html += '<button class="btn btn-outline" id="btn-reveal">💡 看答案</button>';
+  }
+  if (currentIndex < filteredQuestions.length - 1) {
+    const nextLabel = (!studyMode && !isDone) ? '跳过 →' : '下一题 →';
+    html += `<button class="btn btn-outline" id="btn-next">${nextLabel}</button>`;
+  }
+  html += '</div>';
+
+  // Show "review all" if all done
+  const fs = countStats(filteredQuestions);
+  if (fs.done + fs.skip === fs.total && fs.total > 0) {
+    html += '<div class="actions"><button class="btn btn-primary" id="btn-review-all">📊 查看全部结果</button></div>';
+  }
+
+  return html;
+}
+
+function render() {
+  if (filteredQuestions.length === 0) {
+    document.getElementById('quiz-area').innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>没有题目</p></div>';
+    document.getElementById('review-area').style.display = 'none';
+    updateStats();
+    return;
+  }
+  document.getElementById('review-area').style.display = 'none';
+  const q = filteredQuestions[currentIndex];
+  document.getElementById('quiz-area').innerHTML = renderQuestion(q);
+  bindEvents(q);
+  updateStats();
+}
+
+function bindEvents(q) {
+  // Choice options
+  document.querySelectorAll('.option').forEach(el => {
+    el.addEventListener('click', () => {
+      if (q.id in submitted) return;
+      document.querySelectorAll('.option').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      answers[q.id] = el.dataset.value;
+    });
+  });
+
+  // T/F buttons
+  document.querySelectorAll('.tf-btns button').forEach(el => {
+    el.addEventListener('click', () => {
+      if (q.id in submitted) return;
+      document.querySelectorAll('.tf-btns button').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      answers[q.id] = el.dataset.value;
+    });
+  });
+
+  // Fill inputs
+  document.querySelectorAll('.fill-input').forEach(input => {
+    input.addEventListener('input', () => {
+      const idx = parseInt(input.dataset.idx);
+      if (!answers[q.id]) answers[q.id] = [];
+      answers[q.id][idx] = input.value;
+    });
+  });
+
+  // Essay textarea
+  const essayInput = document.querySelector('.essay-input');
+  if (essayInput) {
+    essayInput.addEventListener('input', () => {
+      answers[q.id] = essayInput.value;
+    });
+  }
+
+  // Buttons
+  const btnSubmit = document.getElementById('btn-submit');
+  if (btnSubmit) {
+    btnSubmit.addEventListener('click', () => submit(q));
+  }
+
+  document.getElementById('btn-reveal')?.addEventListener('click', () => {
+    delete answers[q.id];  // clear any pre-selection, force wrong
+    submitted[q.id] = true;
+    render();
+  });
+
+  document.getElementById('btn-prev')?.addEventListener('click', () => {
+    if (currentIndex > 0) {
+      currentIndex--;
+      render();
+    }
+  });
+
+  document.getElementById('btn-next')?.addEventListener('click', () => {
+    if (currentIndex < filteredQuestions.length - 1) {
+      currentIndex++;
+      render();
+    }
+  });
+
+  document.getElementById('btn-review-all')?.addEventListener('click', showReview);
+
+  // Keyboard shortcuts — remove old handler first to prevent accumulation
+  document.removeEventListener('keydown', handleKeyboard);
+  document.addEventListener('keydown', handleKeyboard);
+}
+
+function handleKeyboard(e) {
+  const q = filteredQuestions[currentIndex];
+  if (!q) return;
+
+  if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+    submit(q);
+  } else if (e.key === 'ArrowRight' && currentIndex < filteredQuestions.length - 1) {
+    e.preventDefault();
+    currentIndex++;
+    render();
+  } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+    e.preventDefault();
+    currentIndex--;
+    render();
+  } else if (q.type === 'choice' && !(q.id in submitted)) {
+    const key = e.key.toUpperCase();
+    if (['A','B','C','D'].includes(key)) {
+      e.preventDefault();
+      answers[q.id] = key;
+      render();
+    }
+  }
+}
+
+function submit(q) {
+  // Validate
+  if (!(q.id in answers) || answers[q.id] === undefined || answers[q.id] === '') {
+    // Auto-fail empty
+  }
+  submitted[q.id] = true;
+  render();
+}
+
+function showReview() {
+  document.getElementById('review-area').style.display = 'block';
+  let html = '<div class="review"><h2>📊 答题报告</h2>';
+
+  let correct = 0, wrong = 0;
+  for (let i = 0; i < filteredQuestions.length; i++) {
+    const q = filteredQuestions[i];
+    const done = q.id in submitted;
+    const user = answers[q.id];
+    const ok = done ? isAnswerCorrect(q, user) : null;
+
+    let cls = 'r-skip';
+    if (done && ok === true) { cls = 'r-correct'; correct++; }
+    else if (done && ok === false) { cls = 'r-wrong'; wrong++; }
+
+    html += `<div class="review-item ${cls}">`;
+    const displayNum = randomMode ? (i + 1) : q.number;
+    html += `<div class="review-q"><strong>${displayNum}.</strong> ${q.stem.substring(0, 80)}...</div>`;
+
+    if (q.type === 'choice') {
+      html += `<div class="review-answer">✅ 正确答案：${q.answer}</div>`;
+      if (done && user !== q.answer) html += `<div class="review-your">❌ 你的答案：${user}</div>`;
+    } else if (q.type === 'tf') {
+      html += `<div class="review-answer">✅ 正确答案：${q.answer}</div>`;
+      if (done && user !== q.answer) html += `<div class="review-your">❌ 你的答案：${user}</div>`;
+    } else if (q.type === 'fill') {
+      html += `<div class="review-answer">✅ 正确答案：${q.answers.join('、')}</div>`;
+      if (done && user) html += `<div class="review-your">📝 你的答案：${user.join('、')}</div>`;
+    } else if (q.type === 'essay') {
+      html += `<div class="review-answer">📖 参考：${q.answer.substring(0, 100)}...</div>`;
+    }
+
+    if (!done) html += '<div style="color:#f59e0b;font-size:13px;">⏭️ 未作答</div>';
+    html += '</div>';
+  }
+
+  const total = filteredQuestions.length;
+  html += `<div style="text-align:center;margin-top:20px;font-size:18px;">
+    🎯 正确率：<strong>${total ? Math.round(correct / (correct + wrong) * 100) : 0}%</strong>（${correct}/${correct + wrong}）
+  </div>`;
+  html += '</div>';
+
+  html += '<div class="actions" style="margin-top:20px;"><button class="btn btn-outline" id="btn-back-quiz">返回刷题</button></div>';
+  document.getElementById('quiz-area').innerHTML = html;
+  document.getElementById('review-area').style.display = 'none';
+
+  document.getElementById('btn-back-quiz')?.addEventListener('click', () => {
+    render();
+  });
+}
+
+// Filter buttons
+document.querySelectorAll('#filters button[data-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#filters button[data-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filter = btn.dataset.filter;
+    applyFilter();
+  });
+});
+
+document.getElementById('btn-study')?.addEventListener('click', function() {
+  studyMode = !studyMode;
+  this.classList.toggle('active', studyMode);
+  this.textContent = studyMode ? '📝 刷题' : '📖 背题';
+  updateModeIndicator();
+  answers = {};
+  submitted = {};
+  currentIndex = 0;
+  render();
+});
+
+document.getElementById('btn-random')?.addEventListener('click', function() {
+  randomMode = !randomMode;
+  this.classList.toggle('active', randomMode);
+  this.textContent = randomMode ? '📋 顺序' : '🔀 乱序';
+  updateModeIndicator();
+  answers = {};
+  submitted = {};
+  applyFilter();
+});
+
+function updateModeIndicator() {
+  const ind = document.getElementById('mode-indicator');
+  if (!ind) return;
+  const mode = studyMode ? '📖 背题模式' : '📝 刷题模式';
+  const order = randomMode ? '乱序' : '顺序';
+  ind.textContent = `当前：${mode} · ${order}`;
+  ind.className = 'mode-indicator ' + (studyMode ? 'study' : 'quiz');
+}
+
+document.getElementById('btn-reset')?.addEventListener('click', () => {
+  answers = {};
+  submitted = {};
+  applyFilter();
+});
+
+document.getElementById('btn-jump')?.addEventListener('click', () => {
+  const inp = document.getElementById('jump-input');
+  const num = parseInt(inp.value);
+  if (!num) return;
+  let idx;
+  if (randomMode) {
+    // Jump by position (1-indexed)
+    idx = (num >= 1 && num <= filteredQuestions.length) ? num - 1 : -1;
+  } else {
+    // Jump by original question number
+    idx = filteredQuestions.findIndex(q => q.number === num);
+  }
+  if (idx >= 0) {
+    currentIndex = idx;
+    render();
+    inp.value = '';
+  } else {
+    inp.style.borderColor = '#dc2626';
+    setTimeout(() => { inp.style.borderColor = ''; }, 600);
+  }
+});
+document.getElementById('jump-input')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('btn-jump')?.click();
+});
+
+// Init
+applyFilter();
+</script>
+</body>
+</html>
